@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mango Federation • Future of Tropical Agriculture</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         
@@ -218,9 +220,11 @@
 
         /* Advanced Model Container */
         .model-container {
+            position: relative;
+            z-index: 100;
+            background: none;
             width: 500px;
             height: 500px;
-            position: relative;
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 30px;
@@ -235,6 +239,9 @@
         }
 
         .model-canvas {
+            position: relative;
+            z-index: 101;
+            display: block;
             width: 100%;
             height: 100%;
             border-radius: 30px;
@@ -483,6 +490,17 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        #about .model-container {
+            position: relative;
+            z-index: 100;
+        }
+        #about .model-canvas {
+            position: relative;
+            z-index: 101;
+            display: block;
+            background: none;
+        }
     </style>
 </head>
 <body>
@@ -497,6 +515,8 @@
     </div>
 
     <div class="particles" id="particles"></div>
+
+    <canvas id="mango-canvas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:10;"></canvas>
 
     <nav class="nav">
         <div class="nav-content">
@@ -655,297 +675,463 @@
     </section>
 
     <script>
-        // Advanced 3D Scene Setup
-        let scenes = [];
-        let cameras = [];
-        let renderers = [];
-        let mangoes = [];
-        let particles3D = [];
-        let mouseX = 0;
-        let mouseY = 0;
-
-        // Initialize advanced 3D scenes
-        function initializeScenes() {
-            for (let i = 1; i <= 4; i++) {
-                const canvas = document.getElementById(`canvas${i}`);
-                const scene = new THREE.Scene();
-                
-                // Enhanced camera setup
-                const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
-                camera.position.set(0, 0, 8);
-                
-                const renderer = new THREE.WebGLRenderer({ 
-                    canvas: canvas, 
-                    alpha: true,
-                    antialias: true,
-                    powerPreference: "high-performance"
-                });
-                
-                renderer.setSize(500, 500);
-                renderer.setClearColor(0x000000, 0);
-                renderer.shadowMap.enabled = true;
-                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                renderer.toneMappingExposure = 1;
-
-                // Advanced lighting setup
-                const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
-                scene.add(ambientLight);
-                
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                directionalLight.position.set(10, 10, 5);
-                directionalLight.castShadow = true;
-                directionalLight.shadow.mapSize.width = 2048;
-                directionalLight.shadow.mapSize.height = 2048;
-                scene.add(directionalLight);
-
-                // Color-changing point lights
-                const pointLight1 = new THREE.PointLight(0xff6b35, 1, 100);
-                pointLight1.position.set(5, 5, 5);
-                scene.add(pointLight1);
-
-                const pointLight2 = new THREE.PointLight(0x06ffa5, 0.8, 100);
-                pointLight2.position.set(-5, -5, 5);
-                scene.add(pointLight2);
-
-                const pointLight3 = new THREE.PointLight(0xffd23f, 0.6, 100);
-                pointLight3.position.set(0, 5, -5);
-                scene.add(pointLight3);
-
-                // Create enhanced mango geometry
-                const mangoGeometry = new THREE.SphereGeometry(1.5, 64, 64);
-                mangoGeometry.scale(1, 1.3, 0.9);
-                
-                const mangoMaterial = new THREE.MeshPhysicalMaterial({
-                    color: 0xffa500,
-                    metalness: 0.1,
-                    roughness: 0.2,
-                    clearcoat: 0.8,
-                    clearcoatRoughness: 0.1,
-                    envMapIntensity: 1
-                });
-                
-                const mango = new THREE.Mesh(mangoGeometry, mangoMaterial);
-                mango.castShadow = true;
-                mango.receiveShadow = true;
-                scene.add(mango);
-
-                // Add particle system around mango
-                const particleGeometry = new THREE.BufferGeometry();
-                const particleCount = 100;
-                const positions = new Float32Array(particleCount * 3);
-                const colors = new Float32Array(particleCount * 3);
-
-                for (let j = 0; j < particleCount; j++) {
-                    positions[j * 3] = (Math.random() - 0.5) * 10;
-                    positions[j * 3 + 1] = (Math.random() - 0.5) * 10;
-                    positions[j * 3 + 2] = (Math.random() - 0.5) * 10;
-
-                    colors[j * 3] = Math.random();
-                    colors[j * 3 + 1] = Math.random();
-                    colors[j * 3 + 2] = Math.random();
-                }
-
-                particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-                const particleMaterial = new THREE.PointsMaterial({
-                    size: 0.1,
-                    vertexColors: true,
-                    transparent: true,
-                    opacity: 0.6
-                });
-
-                const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
-                scene.add(particleSystem);
-
-                scenes.push(scene);
-                cameras.push(camera);
-                renderers.push(renderer);
-                mangoes.push(mango);
-                particles3D.push(particleSystem);
-            }
+        function createBackgroundMangos() {
+    // Clear existing background mangos
+    backgroundMangos.forEach(mango => scene.remove(mango));
+    backgroundMangos = [];
+    
+    // Only create background mangos if we're in the home section
+    if (!isInHomeSection()) {
+        return;
+    }
+    
+    // Create multiple background mangos
+    const mangoCount = 25; // Number of background mangos
+    
+    for (let i = 0; i < mangoCount; i++) {
+        let backgroundMango;
+        
+        if (mangoModel) {
+            // Clone the loaded model
+            backgroundMango = mangoModel.clone();
+        } else {
+            // Use fallback geometry
+            backgroundMango = createMangoGeometry();
         }
+        
+        // Random positioning
+        const x = (Math.random() - 0.5) * 30; // Spread across wider area
+        const y = (Math.random() - 0.5) * 20;
+        const z = -10 - Math.random() * 20; // Behind the main content
+        
+        backgroundMango.position.set(x, y, z);
+        
+        // Random scale (smaller for background)
+        const scale = 5 + Math.random() * 10;
+        backgroundMango.scale.set(scale, scale, scale);
+        
+        // Random rotation
+        backgroundMango.rotation.x = Math.random() * Math.PI * 2;
+        backgroundMango.rotation.y = Math.random() * Math.PI * 2;
+        backgroundMango.rotation.z = Math.random() * Math.PI * 2;
+        
+        // Add random rotation speed for animation
+        backgroundMango.userData = {
+            rotationSpeed: {
+                x: (Math.random() - 0.5) * 0.02,
+                y: (Math.random() - 0.5) * 0.02,
+                z: (Math.random() - 0.5) * 0.02
+            },
+            floatSpeed: 0.001 + Math.random() * 0.003,
+            floatOffset: Math.random() * Math.PI * 2
+        };
+        
+        scene.add(backgroundMango);
+        backgroundMangos.push(backgroundMango);
+    }
+}
 
-        // Load OBJ Model
-        function loadOBJModel() {
-            const loader = new THREE.OBJLoader();
+// Add this helper function to check if we're in the home section
+function isInHomeSection() {
+    const homeSection = document.getElementById('home');
+    if (!homeSection) return false;
+    
+    const rect = homeSection.getBoundingClientRect();
+    const viewportCenter = window.innerHeight / 2;
+    
+    // Check if home section is visible in viewport
+    return rect.top <= viewportCenter && rect.bottom >= viewportCenter;
+}
+
+// Add this function to handle scroll-based mango visibility
+function handleMangoVisibility() {
+    const inHomeSection = isInHomeSection();
+    
+    // Show/hide background mangos based on section
+    backgroundMangos.forEach(mango => {
+        mango.visible = inHomeSection;
+    });
+    
+    // If we just entered home section and don't have mangos, create them
+    if (inHomeSection && backgroundMangos.length === 0) {
+        createBackgroundMangos();
+    }
+    
+    // If we left home section, remove mangos to save performance
+    if (!inHomeSection && backgroundMangos.length > 0) {
+        backgroundMangos.forEach(mango => scene.remove(mango));
+        backgroundMangos = [];
+    }
+}
+
+// Update the scroll event listener to include mango visibility handling
+// Replace the existing scroll event listener with this:
+window.addEventListener('scroll', () => {
+    // Update scroll progress bar
+    const scrollTop = window.scrollY;
+    const docHeight = document.body.scrollHeight - window.innerHeight;
+    const scrollProgress = docHeight > 0 ? scrollTop / docHeight : 0;
+    
+    const progressBar = document.getElementById('scrollProgress');
+    if (progressBar) {
+        progressBar.style.transform = `scaleX(${scrollProgress})`;
+    }
+    
+    // Update target Y position based on scroll (smaller range)
+    targetY = (scrollProgress - 0.5) * 1;
+    
+    // Handle mango visibility based on current section
+    handleMangoVisibility();
+});
+
+// Replace the entire script section in your HTML with this complete version:
+// Put this code at the end of your HTML file, replacing the existing script tag:
+
+let mango = null;
+let backgroundMangos = [];
+let scene, camera, renderer;
+let mouseX = 0, mouseY = 0;
+let targetY = 0;
+let currentY = 0;
+let mangoModel = null;
+
+function initializeScene() {
+    const canvas = document.getElementById('mango-canvas');
+    scene = new THREE.Scene();
+
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 8);
+
+    renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: "high-performance"
+    });
+    renderer.setClearColor(0x000000, 0);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(10, 10, 10);
+    scene.add(directionalLight);
+}
+
+function createMangoGeometry() {
+    const group = new THREE.Group();
+    
+    const bodyGeometry = new THREE.SphereGeometry(0.3, 32, 32);
+    bodyGeometry.scale(1, 1.4, 0.8);
+    const bodyMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xff6b35,
+        roughness: 0.3,
+        metalness: 0.1
+    });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    group.add(body);
+    
+    const highlightGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+    const highlightMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xffd23f,
+        roughness: 0.2,
+        metalness: 0.2
+    });
+    const highlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+    highlight.position.set(0.1, 0.1, 0.2);
+    group.add(highlight);
+    
+    return group;
+}
+
+function isInHomeSection() {
+    const homeSection = document.getElementById('home');
+    if (!homeSection) return false;
+    
+    const rect = homeSection.getBoundingClientRect();
+    const viewportCenter = window.innerHeight / 2;
+    
+    return rect.top <= viewportCenter && rect.bottom >= viewportCenter;
+}
+
+function createBackgroundMangos() {
+    backgroundMangos.forEach(mango => scene.remove(mango));
+    backgroundMangos = [];
+    
+    if (!isInHomeSection()) {
+        return;
+    }
+    
+    const mangoCount = 25;
+    
+    for (let i = 0; i < mangoCount; i++) {
+        let backgroundMango;
+        
+        if (mangoModel) {
+            backgroundMango = mangoModel.clone();
+        } else {
+            backgroundMango = createMangoGeometry();
+        }
+        
+        const x = (Math.random() - 0.5) * 30;
+        const y = (Math.random() - 0.5) * 20;
+        const z = -10 - Math.random() * 20;
+        
+        backgroundMango.position.set(x, y, z);
+        
+        const scale = 5 + Math.random() * 10;
+        backgroundMango.scale.set(scale, scale, scale);
+        
+        backgroundMango.rotation.x = Math.random() * Math.PI * 2;
+        backgroundMango.rotation.y = Math.random() * Math.PI * 2;
+        backgroundMango.rotation.z = Math.random() * Math.PI * 2;
+        
+        backgroundMango.userData = {
+            rotationSpeed: {
+                x: (Math.random() - 0.5) * 0.02,
+                y: (Math.random() - 0.5) * 0.02,
+                z: (Math.random() - 0.5) * 0.02
+            },
+            floatSpeed: 0.001 + Math.random() * 0.003,
+            floatOffset: Math.random() * Math.PI * 2
+        };
+        
+        scene.add(backgroundMango);
+        backgroundMangos.push(backgroundMango);
+    }
+}
+
+function handleMangoVisibility() {
+    const inHomeSection = isInHomeSection();
+    
+    backgroundMangos.forEach(mango => {
+        mango.visible = inHomeSection;
+    });
+    
+    if (inHomeSection && backgroundMangos.length === 0) {
+        createBackgroundMangos();
+    }
+    
+    if (!inHomeSection && backgroundMangos.length > 0) {
+        backgroundMangos.forEach(mango => scene.remove(mango));
+        backgroundMangos = [];
+    }
+}
+
+function loadMangoModel() {
+    if (mango) scene.remove(mango);
+
+    const mtlLoader = new THREE.MTLLoader();
+    const objLoader = new THREE.OBJLoader();
+
+    mtlLoader.load(
+        'mango(1)/source/AppleMango.mtl',
+        function (materials) {
+            materials.preload();
+            objLoader.setMaterials(materials);
             
-            // Try to load the OBJ model
-            loader.load('D:/Mango/mango(1)/source/AppleMango.obj', 
-                (object) => {
-                    console.log('OBJ model loaded successfully');
-                    
-                    // Replace placeholder mangoes with loaded model
-                    mangoes.forEach((mango, index) => {
-                        scenes[index].remove(mango);
-                        const clone = object.clone();
-                        
-                        // Scale and position the model
-                        clone.scale.set(0.02, 0.02, 0.02);
-                        clone.position.set(0, 0, 0);
-                        
-                        clone.traverse((child) => {
-                            if (child.isMesh) {
-                                child.material = new THREE.MeshPhysicalMaterial({
-                                    color: 0xffa500,
-                                    metalness: 0.1,
-                                    roughness: 0.2,
-                                    clearcoat: 0.8,
-                                    clearcoatRoughness: 0.1
-                                });
-                                child.castShadow = true;
-                                child.receiveShadow = true;
-                            }
-                        });
-                        
-                        scenes[index].add(clone);
-                        mangoes[index] = clone;
-                    });
+            objLoader.load(
+                'mango(1)/source/AppleMango.obj',
+                function (object) {
+                    mangoModel = object;
+                    mango = object.clone();
+                    mango.scale.set(20, 20, 20);
+                    mango.position.set(10, 0, 0);
+                    scene.add(mango);
+                    createBackgroundMangos();
                 },
-                (progress) => {
-                    console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
+                function (progress) {
+                    if (progress.lengthComputable) {
+                        console.log('Loading OBJ progress:', (progress.loaded / progress.total * 100) + '%');
+                    }
                 },
-                (error) => {
-                    console.log('Error loading OBJ model:', error);
-                    console.log('Using placeholder mango models');
+                function (error) {
+                    console.error('Error loading OBJ file:', error);
+                    mangoModel = createMangoGeometry();
+                    mango = mangoModel.clone();
+                    mango.scale.set(20, 20, 20);
+                    mango.position.set(10, 0, 0);
+                    scene.add(mango);
+                    createBackgroundMangos();
+                }
+            );
+        },
+        function (progress) {
+            if (progress.lengthComputable) {
+                console.log('Loading MTL progress:', (progress.loaded / progress.total * 100) + '%');
+            }
+        },
+        function (error) {
+            console.error('Error loading MTL file:', error);
+            objLoader.load(
+                'mango(1)/source/AppleMango.obj',
+                function (object) {
+                    mangoModel = object;
+                    mango = object.clone();
+                    mango.scale.set(20, 20, 20);
+                    mango.position.set(10, 0, 0);
+                    scene.add(mango);
+                    createBackgroundMangos();
+                },
+                undefined,
+                function (error) {
+                    console.error('Fallback OBJ loading failed:', error);
+                    mangoModel = createMangoGeometry();
+                    mango = mangoModel.clone();
+                    mango.scale.set(20, 20, 20);
+                    mango.position.set(10, 0, 0);
+                    scene.add(mango);
+                    createBackgroundMangos();
                 }
             );
         }
+    );
+}
 
-        // Enhanced animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            const time = Date.now() * 0.001;
-            
-            mangoes.forEach((mango, index) => {
-                if (mango) {
-                    // Smooth rotation with mouse interaction
-                    mango.rotation.x = Math.sin(time + index) * 0.5 + (mouseY - 0.5) * 0.5;
-                    mango.rotation.y = time * 0.5 + (mouseX - 0.5) * 0.5;
-                    mango.rotation.z = Math.cos(time + index) * 0.3;
-                    
-                    // Floating animation
-                    mango.position.y = Math.sin(time + index) * 0.3;
-                }
-            });
+function getMangoX() {
+    const sections = [
+        { id: 'about', position: 1 },
+        { id: 'production', position: 2 },
+        { id: 'innovation', position: 3 },
+        { id: 'impact', position: 4 }
+    ];
 
-            // Animate particles
-            particles3D.forEach((particleSystem, index) => {
-                if (particleSystem) {
-                    particleSystem.rotation.y = time * 0.1;
-                    particleSystem.rotation.x = time * 0.05;
-                }
-            });
+    const positionMap = {
+        1: 3,
+        2: -3,
+        3: 3,
+        4: -3
+    };
 
-            // Animate lights
-            scenes.forEach((scene, index) => {
-                const lights = scene.children.filter(child => child.type === 'PointLight');
-                lights.forEach((light, lightIndex) => {
-                    if (lightIndex === 0) {
-                        light.position.x = Math.sin(time + index) * 5;
-                        light.position.z = Math.cos(time + index) * 5;
-                    }
-                    if (lightIndex === 1) {
-                        light.position.y = Math.sin(time * 0.7 + index) * 5;
-                    }
-                    if (lightIndex === 2) {
-                        light.position.x = Math.cos(time * 0.5 + index) * 5;
-                        light.position.y = Math.sin(time * 0.5 + index) * 5;
-                    }
-                });
-            });
+    const viewportCenter = window.innerHeight / 2;
+    let currentPosition = 1;
 
-            // Render all scenes
-            renderers.forEach((renderer, index) => {
-                renderer.render(scenes[index], cameras[index]);
-            });
+    for (let i = 0; i < sections.length; i++) {
+        const element = document.getElementById(sections[i].id);
+        const rect = element.getBoundingClientRect();
+        
+        const sectionTop = rect.top;
+        const sectionBottom = rect.bottom;
+        
+        if (sectionTop <= viewportCenter && sectionBottom >= viewportCenter) {
+            currentPosition = sections[i].position;
+            break;
         }
-
-        // Mouse interaction for rotation
-        document.addEventListener('mousemove', (event) => {
-            mouseX = event.clientX / window.innerWidth;
-            mouseY = event.clientY / window.innerHeight;
-        });
-
-        // Responsive resizing
-        function onWindowResize() {
-            for (let i = 0; i < renderers.length; i++) {
-                const canvas = renderers[i].domElement;
-                const size = Math.min(canvas.parentElement.offsetWidth, 500);
-                cameras[i].aspect = 1;
-                cameras[i].updateProjectionMatrix();
-                renderers[i].setSize(size, size);
-            }
+        
+        if (sectionTop < viewportCenter) {
+            currentPosition = sections[i].position;
         }
-        window.addEventListener('resize', onWindowResize);
+    }
+    
+    return positionMap[currentPosition] || 0;
+}
 
-        // Fade-in on scroll
-        function handleFadeIn() {
-            const fadeEls = document.querySelectorAll('.fade-in');
-            fadeEls.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                if (rect.top < window.innerHeight - 100) {
-                    el.classList.add('visible');
-                }
-            });
+function animate() {
+    requestAnimationFrame(animate);
+    
+    const time = Date.now() * 0.001;
+    
+    if (mango) {
+        const targetX = getMangoX();
+        mango.position.x += (targetX - mango.position.x) * 0.01;
+        
+        currentY += (targetY - currentY) * 0.08;
+        mango.position.y = currentY;
+        
+        mango.rotation.y += (mouseX - 0.5) * 0.005;
+        mango.rotation.x += (mouseY - 0.5) * 0.005;
+        
+        mango.position.y += Math.sin(time * 2) * 0.05;
+        mango.rotation.z += 0.01;
+    }
+    
+    backgroundMangos.forEach((backgroundMango, index) => {
+        const userData = backgroundMango.userData;
+        
+        backgroundMango.rotation.x += userData.rotationSpeed.x;
+        backgroundMango.rotation.y += userData.rotationSpeed.y;
+        backgroundMango.rotation.z += userData.rotationSpeed.z;
+        
+        backgroundMango.position.y += Math.sin(time * userData.floatSpeed + userData.floatOffset) * 0.02;
+        backgroundMango.position.x += Math.sin(time * userData.floatSpeed * 0.5 + userData.floatOffset) * 0.01;
+    });
+    
+    renderer.render(scene, camera);
+}
+
+document.addEventListener('mousemove', (event) => {
+    mouseX = event.clientX / window.innerWidth;
+    mouseY = event.clientY / window.innerHeight;
+});
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+window.addEventListener('resize', onWindowResize);
+
+function handleFadeIn() {
+    const fadeEls = document.querySelectorAll('.fade-in');
+    fadeEls.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight - 100) {
+            el.classList.add('visible');
         }
-        window.addEventListener('scroll', handleFadeIn);
+    });
+}
+window.addEventListener('scroll', handleFadeIn);
 
-        // Scroll progress bar
-        window.addEventListener('scroll', () => {
-            const scrollProgress = document.getElementById('scrollProgress');
-            const scrollTop = window.scrollY;
-            const docHeight = document.body.scrollHeight - window.innerHeight;
-            const progress = Math.min(scrollTop / docHeight, 1);
-            scrollProgress.style.transform = `scaleX(${progress})`;
-        });
+window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.body.scrollHeight - window.innerHeight;
+    const scrollProgress = docHeight > 0 ? scrollTop / docHeight : 0;
+    
+    const progressBar = document.getElementById('scrollProgress');
+    if (progressBar) {
+        progressBar.style.transform = `scaleX(${scrollProgress})`;
+    }
+    
+    targetY = (scrollProgress - 0.5) * 1;
+    handleMangoVisibility();
+});
 
-        // Particle background
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            for (let i = 0; i < 60; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = `${Math.random() * 100}%`;
-                particle.style.top = `${Math.random() * 100}%`;
-                particle.style.animationDuration = `${4 + Math.random() * 4}s`;
-                particlesContainer.appendChild(particle);
-            }
-        }
+function createParticles() {
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 60; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.animationDuration = `${4 + Math.random() * 4}s`;
+        particle.style.animationDelay = `${Math.random() * 2}s`;
+        particlesContainer.appendChild(particle);
+    }
+}
 
-        // OBJLoader dependency
-        function loadOBJLoaderScript(callback) {
-            if (typeof THREE.OBJLoader === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js';
-                script.onload = callback;
-                document.body.appendChild(script);
-            } else {
-                callback();
-            }
-        }
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.style.display = 'none', 500);
+    }
+}
 
-        // Hide loading overlay
-        function hideLoadingOverlay() {
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.style.opacity = 0;
-            setTimeout(() => overlay.style.display = 'none', 500);
-        }
-
-        // Initialize everything
-        window.addEventListener('DOMContentLoaded', () => {
-            createParticles();
-            initializeScenes();
-            loadOBJLoaderScript(() => {
-                loadOBJModel();
-            });
-            animate();
-            onWindowResize();
-            handleFadeIn();
-            setTimeout(hideLoadingOverlay, 1200);
-        });
+// Initialize everything when DOM is ready
+window.addEventListener('DOMContentLoaded', () => {
+    initializeScene();
+    loadMangoModel();
+    animate();
+    onWindowResize();
+    setTimeout(() => {
+        hideLoadingOverlay();
+        handleMangoVisibility();
+    }, 1200);
+});
     </script>
 </body>
 </html>
