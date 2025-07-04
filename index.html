@@ -939,7 +939,7 @@ function loadMangoModel() {
                 function (object) {
                     mangoModel = object;
                     mango = object.clone();
-                    mango.scale.set(20, 20, 20);
+                    mango.scale.set(30, 30, 30);
                     mango.position.set(10, 0, 0);
                     scene.add(mango);
                     createBackgroundMangos();
@@ -953,7 +953,7 @@ function loadMangoModel() {
                     console.error('Error loading OBJ file:', error);
                     mangoModel = createMangoGeometry();
                     mango = mangoModel.clone();
-                    mango.scale.set(20, 20, 20);
+                    mango.scale.set(30, 30, 30);
                     mango.position.set(10, 0, 0);
                     scene.add(mango);
                     createBackgroundMangos();
